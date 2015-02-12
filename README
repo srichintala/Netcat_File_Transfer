@@ -1,0 +1,160 @@
+Project 1: netcat_part
+-----------------------
+
+Name: Mrunal M Pagnis
+uname: mmpagnis
+
+Name: Sri Laxmi Chintala
+uname: chintals
+
+===================================
+
+Contents:
+---------
+
+1. Introduction
+2. Files used
+3. Description of code
+4. Implementation
+5. Interpretation of output
+
+===================================
+1. Introduction
+---------------
+
+The netcat_part is a simple client/server socket application. The main objective 
+of this project is create a connection between a client and server, through which 
+the client sends a message/file to the server and server stores the received 
+content into a file. In order to achieve security in this project, a Message 
+Authentication Code is created, which checks for the data integrity. 
+
+===================================
+2. Files used
+-------------
+
+netcat_part.c				Serves as client and connects to server 
+server_side.c				Acts as server and stores the received contents into file			
+segements.eng				File used for sending to the server
+store.txt					File in which the server stores the received contents
+
+===================================
+3. Description of code
+----------------------
+
+In this project the client and server part is implemented in two separate files, 
+one serving the functionality of client and the other as server.
+
+Client functionality
+--------------------
+
+The client first creates a socket, binds the socket to port, then sends the request
+to server for setting up a connection, which is implemented in the connectToServer().
+After setting up connection, the client sends message which is implemented in sendMsg().
+In sendMsg(), the memory for message is allocated dynamically and is sent using write(). 
+By using a shared key, the MAC is created for the message being sent and is written on 
+to the socket. Then the hash length is calculated and separately write onto the socket.
+Similarly, a file is sent to server whose code is implemented in sendFile(). There are 
+3 ways of sending a file, one way is to send the entire file, second is to read the file 
+from a specified offset till the end of file, and third is to start from a specified offset 
+and read until the specified number of bytes is reached. In sendFile(), a file is opened 
+first, it is read in buffer-by-buffer format and writes to the socket in similar fashion.
+The code implementation for sending n number of bytes to sever is done in the function 
+sendSelectedBytes(),in which fread() is used to read the bytes and write to the socket. 
+If the number of bytes specified is greater than the file size then, file starting from offset
+position till the end of file is written on to the socket, for which MAC and hash length 
+are computed and are separately written onto server. A function checkSelectedBytes() is 
+used for checking if the number of bytes specified to read is exceeding the end of file. 
+For every file being sent, the MAC and the hash length calculated are separately written 
+onto the server.
+
+Server functionality
+--------------------
+
+In this project, the purpose of server is to listen to the client connections and store the 
+received contents into a file. The server also creates a socket, binds socket to port, then 
+accepts the connection after which server starts receiving the message/file from client. The 
+options available for server are -p and -l which are used for setting the port for listening.
+The server side defines 2 functions namely readFileIntoBuffer(), splitStrings(). In the main() 
+a file is opened and the entire contents of message/file is copied into it after which the file 
+is closed. The MAC is calculated for message and is stored in mac. Then readFileIntoBuffer() 
+is called, in which a buffer is used to write the contents of file and splitStrings() is used
+to separate the message, MAC received and length of the hash. The separated message is stored
+into msgRecv, MAC received is stored in macRecv and the length of MAC is stored in hashlen. 
+Finally the MAC computed(stored in mac) and the MAC received(stored in macRecv) is compared to 
+check the integrity of message received. If there is a match, then the data sent from client is 
+received correctly by the server.
+
+===================================
+4. Implementation
+-----------------
+
+This project is implemented in C language. 
+
+The commands for compiling and running the program are as follows:
+
+Compiling the server program(-lssl is required to compile when openssl/hmac.h library is used
+for creating the MAC)
+----------------------------
+gcc -lssl server_side.c -o server_side           
+
+
+
+Run the server program
+----------------------
+./server_side
+
+After running the server program compile the client program which is done as:
+
+gcc -lssl netcat_part.c -o netcat_part
+
+
+Run the client program with the IP address(for sending message use -m option)
+----------------------
+./netcat_part -lssl -m "Hello World" 127.0.0.1
+
+
+For sending a file 
+------------------
+./netcat_part -lssl 127.0.0.1 "file.txt"
+
+Sending file with offset option(the file is read from the specified offset position)
+-------------------------------
+./netcat_part -lssl -o 3 127.0.0.1 "file.txt"
+
+Sending file with offset and n_bytes option(file is read from specified offset and reads until n_bytes)
+-------------------------------------------
+./netcat_part -lssl -o 3 -n 4 127.0.0.1 "file.txt"
+
+===================================
+5. Interpretation of output
+---------------------------
+
+Client side:
+------------
+After the client has set up the connection with server, following message is displayed:
+
+"You have connected to server"
+
+-m option is used for sending message, client displays the message and length of message as below:
+
+"Your message= hello"
+"length of message= 5"
+
+MAC is calculated for entire message/file and the length of mac is displayed at the client side.
+
+"Message sent" is displayed when message is sent from client side and
+"Your file is sent" is displayed when a file is sent.
+"Closing connection with server" is displayed when socket is closed.
+
+Server side:
+------------
+
+"Connected to client successfully" is displayed when server is connected to the client.
+
+"Received file" is printed when the server successfully receives a message/file.
+
+"Extracted the Message, MAC and the hash length" is displayed when the server separates contents of message/file 
+from the total data received. 
+
+If the MAC computed and the MAC received are matched then 
+"Message Authentic" is displayed on the screen.
